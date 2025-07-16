@@ -1,25 +1,25 @@
+// lib/screens/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:people_management/components/custom_button.dart';
 import 'package:people_management/components/custom_text_field.dart';
-import 'package:people_management/screens/auth/register_screen.dart';
-import 'package:people_management/screens/users/user_list_screen.dart';
+import 'package:people_management/screens//auth/login_screen.dart'; // Import login screen to navigate back
 import 'package:people_management/utils/app_colors.dart';
 import 'package:people_management/utils/app_styles.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:people_management/utils/user_preferences.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _rememberMe = false;
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -29,19 +29,24 @@ class _LoginScreenState extends State<LoginScreen> {
       msg: message,
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.TOP,
-      timeInSecForIosWeb: 1,
       backgroundColor: color,
       textColor: Colors.white,
       fontSize: 16.0,
     );
   }
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
+    String confirmPassword = _confirmPasswordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      _toastMessage("Email dan kata sandi harus diisi!", Colors.red);
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _toastMessage("Semua kolom harus diisi!", Colors.red);
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _toastMessage("Kata sandi tidak cocok!", Colors.red);
       return;
     }
 
@@ -50,30 +55,29 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      if (userCredential.user != null) {
-        await UserPreferences.saveUser(userCredential.user);
-      }
-
       if (!mounted) return;
-      _toastMessage("Login Berhasil!", Colors.green);
-      Navigator.pushReplacement(
+      _toastMessage("Registrasi Berhasil!", Colors.green);
+      // Navigate to login screen after successful registration
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => UserListScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
       );
+
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String errorMessage;
-      if (e.code == 'invalid-credential') {
-        errorMessage = "Email atau kata sandi salah.";
+      if (e.code == 'weak-password') {
+        errorMessage = "Kata sandi terlalu lemah.";
+      } else if (e.code == 'email-already-in-use') {
+        errorMessage = "Email sudah terdaftar.";
       } else if (e.code == 'invalid-email') {
         errorMessage = "Format email tidak valid.";
-      } else if (e.code == 'channel-error') {
-        errorMessage = "Silakan isi email dan kata sandi.";
       } else {
         errorMessage = "Terjadi kesalahan: ${e.message}";
       }
@@ -94,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -141,12 +146,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     Image.asset('lib/assets/images/logo-app.png', height: 40),
                     const SizedBox(height: 30),
                     Text(
-                      'Welcome Back',
+                      'Create an Account',
                       style: AppStyles.headingStyle.copyWith(fontSize: 24),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Enter your details below to log back into\nyour account',
+                      'Enter your details below to create your\nnew account',
                       style: AppStyles.subHeadingStyle,
                       textAlign: TextAlign.center,
                     ),
@@ -170,82 +175,43 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppColors.hintColor,
                       ),
                     ),
-                    const SizedBox(height: 15),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 24.0,
-                              height: 24.0,
-                              child: Checkbox(
-                                value: _rememberMe,
-                                onChanged: (bool? newValue) {
-                                  setState(() {
-                                    _rememberMe = newValue ?? false;
-                                  });
-                                },
-                                activeColor: AppColors.checkboxColor,
-                                checkColor: Colors.white,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Remember me',
-                              style: AppStyles.rememberMeStyle,
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            _toastMessage(
-                              "Forgot password feature not implemented yet!",
-                              Colors.red,
-                            );
-                          },
-                          child: Text(
-                            'Forgot password?',
-                            style: AppStyles.linkTextStyle,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 20),
+                    CustomTextField(
+                      controller: _confirmPasswordController,
+                      hintText: 'Confirm Password',
+                      obscureText: true,
+                      prefixIcon: const Icon(
+                        Icons.lock_outline,
+                        color: AppColors.hintColor,
+                      ),
                     ),
                     const SizedBox(height: 30),
                     _isLoading
                         ? const CircularProgressIndicator(
-                          color: AppColors.primaryPurple,
-                        )
+                            color: AppColors.primaryPurple,
+                          )
                         : CustomButton(
-                          text: "Login",
-                          onPressed: _login,
-                          backgroundColor: AppColors.primaryPurple,
-                          textColor: AppColors.cardColor,
-                        ),
+                            text: "Sign Up",
+                            onPressed: _register,
+                            backgroundColor: AppColors.primaryPurple,
+                            textColor: AppColors.cardColor,
+                          ),
                     const SizedBox(height: 50),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Don't have an account?",
+                          "Already have an account?",
                           style: AppStyles.subHeadingStyle.copyWith(
                             fontSize: 14,
                           ),
                         ),
                         TextButton(
                           onPressed: () {
-                            // Replace the toast message with navigation
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const RegisterScreen(),
-                              ),
-                            );
+                            Navigator.pop(context);
                           },
                           child: Text(
-                            'Sign up',
+                            'Login',
                             style: AppStyles.linkTextStyle,
                           ),
                         ),
