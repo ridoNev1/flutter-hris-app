@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "784463954015",
+    "project_id": "master-esgul-assignment-app",
+    "storage_bucket": "master-esgul-assignment-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784463954015:android:01b0f5e84cf115604b5bea",
+        "android_client_info": {
+          "package_name": "com.example.people_management"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq7t2A-Y9Sq7HjYoq7HLcmZfKHqDBfhEI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
