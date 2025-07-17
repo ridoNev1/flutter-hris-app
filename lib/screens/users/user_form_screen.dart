@@ -6,6 +6,7 @@ import 'package:people_management/utils/app_colors.dart';
 import 'package:people_management/utils/app_styles.dart';
 import 'package:people_management/screens/users/user_list_screen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 
 class UserFormScreen extends StatefulWidget {
   final Users? user;
@@ -26,17 +27,37 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
   final List<String> _roles = ['Admin', 'User'];
   String? _selectedRole;
+  String? _currentUserRole;
 
   @override
   void initState() {
     super.initState();
+    _loadCurrentUserRole();
+
     if (widget.user != null) {
       _nameController.text = widget.user!.name;
       _emailController.text = widget.user!.email;
       _avatarUrlController.text = widget.user!.avatarUrl ?? '';
-      _selectedRole = widget.user!.role == '1' ? 'Admin' : 'User';
+      _selectedRole = widget.user!.role;
     } else {
       _selectedRole = 'User';
+    }
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    final firebaseUser = auth.FirebaseAuth.instance.currentUser;
+    if (firebaseUser != null) {
+      try {
+        final doc =
+            await _firestore.collection('users').doc(firebaseUser.uid).get();
+        if (doc.exists && mounted) {
+          setState(() {
+            _currentUserRole = doc.data()?['role'];
+          });
+        }
+      } catch (e) {
+        _toastMessage("Gagal memuat data peran: $e", Colors.red);
+      }
     }
   }
 
@@ -60,6 +81,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
     setState(() {
       _isLoading = true;
     });
+
     Map<String, dynamic> userData = {
       'name': _nameController.text.trim(),
       'email': _emailController.text.trim(),
@@ -79,9 +101,10 @@ class _UserFormScreenState extends State<UserFormScreen> {
         _toastMessage("Data pengguna berhasil diperbarui", Colors.blue);
       }
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => UserListScreen()),
+          MaterialPageRoute(builder: (context) => const UserListScreen()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -106,6 +129,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isEditing = widget.user != null;
+    final bool isRoleSelectionDisabled = _currentUserRole != 'Admin';
 
     return Scaffold(
       backgroundColor: AppColors.lightGreyBackground,
@@ -160,35 +184,47 @@ class _UserFormScreenState extends State<UserFormScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.cardColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey, width: 0.5),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedRole,
-                  isExpanded: true,
-                  hint: Text('Pilih Role', style: AppStyles.subHeadingStyle),
-                  icon: const Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColors.hintColor,
+            AbsorbPointer(
+              absorbing: isRoleSelectionDisabled,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isRoleSelectionDisabled
+                          ? Colors.grey.shade200
+                          : AppColors.cardColor,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey, width: 0.5),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedRole,
+                    isExpanded: true,
+                    hint: Text('Pilih Role', style: AppStyles.subHeadingStyle),
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: AppColors.hintColor,
+                    ),
+                    style: AppStyles.inputTextStyle,
+                    onChanged:
+                        isRoleSelectionDisabled
+                            ? null
+                            : (String? newValue) {
+                              setState(() {
+                                _selectedRole = newValue;
+                              });
+                            },
+                    items:
+                        _roles.map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
                   ),
-                  style: AppStyles.inputTextStyle,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedRole = newValue;
-                    });
-                  },
-                  items:
-                      _roles.map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
                 ),
               ),
             ),

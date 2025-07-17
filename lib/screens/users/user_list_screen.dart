@@ -45,6 +45,34 @@ class UserListScreen extends StatefulWidget {
 
 class _UserListScreenState extends State<UserListScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  User? firebaseUser = FirebaseAuth.instance.currentUser;
+  String? _currentUserRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserRole();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    if (firebaseUser != null) {
+      try {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(firebaseUser!.uid)
+                .get();
+
+        if (doc.exists && mounted) {
+          setState(() {
+            _currentUserRole = doc.data()?['role'];
+          });
+        }
+      } catch (e) {
+        Fluttertoast.showToast(msg: "Gagal memuat data user: $e");
+      }
+    }
+  }
 
   Future<void> _logout(BuildContext context) async {
     try {
@@ -78,20 +106,21 @@ class _UserListScreenState extends State<UserListScreen> {
         iconTheme: const IconThemeData(color: AppColors.cardColor),
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.add_circle_outline,
-              color: AppColors.cardColor,
+          if (_currentUserRole == 'Admin')
+            IconButton(
+              icon: const Icon(
+                Icons.add_circle_outline,
+                color: AppColors.cardColor,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UserFormScreen(user: null),
+                  ),
+                );
+              },
             ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserFormScreen(user: null),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.logout, color: AppColors.cardColor),
             onPressed: () => _logout(context),

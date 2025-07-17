@@ -3,11 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:people_management/components/custom_button.dart';
 import 'package:people_management/components/custom_text_field.dart';
-import 'package:people_management/screens//auth/login_screen.dart'; // Import login screen to navigate back
 import 'package:people_management/utils/app_colors.dart';
 import 'package:people_management/utils/app_styles.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:people_management/screens/auth/complate_profile.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,7 +19,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -65,10 +66,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Navigate to login screen after successful registration
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const CompleteRegisterScreen()),
         (route) => false,
       );
-
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String errorMessage;
@@ -188,14 +188,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 30),
                     _isLoading
                         ? const CircularProgressIndicator(
-                            color: AppColors.primaryPurple,
-                          )
+                          color: AppColors.primaryPurple,
+                        )
                         : CustomButton(
-                            text: "Sign Up",
-                            onPressed: _register,
-                            backgroundColor: AppColors.primaryPurple,
-                            textColor: AppColors.cardColor,
-                          ),
+                          text: "Sign Up",
+                          onPressed: _register,
+                          backgroundColor: AppColors.primaryPurple,
+                          textColor: AppColors.cardColor,
+                        ),
                     const SizedBox(height: 50),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -210,10 +210,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           onPressed: () {
                             Navigator.pop(context);
                           },
-                          child: Text(
-                            'Login',
-                            style: AppStyles.linkTextStyle,
-                          ),
+                          child: Text('Login', style: AppStyles.linkTextStyle),
                         ),
                       ],
                     ),

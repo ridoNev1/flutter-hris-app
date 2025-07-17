@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:people_management/components/custom_button.dart';
 import 'package:people_management/components/custom_text_field.dart';
-import 'package:people_management/screens/auth/login_screen.dart'; // Arahkan ke login setelah selesai
+import 'package:people_management/screens/users/user_list_screen.dart';
 import 'package:people_management/utils/app_colors.dart';
 import 'package:people_management/utils/app_styles.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -17,7 +17,7 @@ class CompleteRegisterScreen extends StatefulWidget {
 
 class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
   final TextEditingController _fullNameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _profileController = TextEditingController();
   bool _isLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -36,14 +36,13 @@ class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
 
   Future<void> _saveProfile() async {
     String fullName = _fullNameController.text.trim();
-    String phone = _phoneController.text.trim();
+    String profile = _profileController.text.trim();
 
-    if (fullName.isEmpty || phone.isEmpty) {
-      _toastMessage("Nama lengkap dan nomor telepon harus diisi!", Colors.red);
+    if (fullName.isEmpty) {
+      _toastMessage("Nama lengkap harus diisi!", Colors.red);
       return;
     }
 
-    // Ambil pengguna yang sedang aktif dari Firebase Auth
     User? currentUser = _auth.currentUser;
     if (currentUser == null) {
       _toastMessage(
@@ -52,7 +51,7 @@ class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
       );
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const UserListScreen()),
         (route) => false,
       );
       return;
@@ -63,23 +62,21 @@ class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
     });
 
     try {
-      // Simpan data ke Firestore menggunakan UID pengguna sebagai ID dokumen
       await _firestore.collection('users').doc(currentUser.uid).set({
         'uid': currentUser.uid,
-        'fullName': fullName,
-        'phone': phone,
-        'email': currentUser.email, // Simpan juga email untuk kemudahan query
+        'name': fullName,
+        'avatarUrl': profile,
+        'email': currentUser.email,
         'createdAt': Timestamp.now(),
-        'role': 'User', // Menambahkan role default
+        'role': 'User',
       });
 
       if (!mounted) return;
       _toastMessage("Profil berhasil disimpan!", Colors.green);
 
-      // Arahkan ke halaman login (atau halaman utama aplikasi Anda)
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const UserListScreen()),
         (route) => false,
       );
     } catch (e) {
@@ -97,7 +94,7 @@ class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
-    _phoneController.dispose();
+    _profileController.dispose();
     super.dispose();
   }
 
@@ -166,13 +163,13 @@ class _CompleteRegisterScreenState extends State<CompleteRegisterScreen> {
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
-                      controller: _phoneController,
-                      hintText: 'Nomor Telepon',
-                      keyboardType: TextInputType.phone,
+                      controller: _profileController,
+                      hintText: 'URL Gambar Profil (Opsional)',
                       prefixIcon: const Icon(
-                        Icons.phone_outlined,
+                        Icons.image_outlined,
                         color: AppColors.hintColor,
                       ),
+                      keyboardType: TextInputType.url,
                     ),
                     const SizedBox(height: 40),
                     _isLoading
