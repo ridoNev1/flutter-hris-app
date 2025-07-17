@@ -202,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextButton(
                           onPressed: () {
                             _toastMessage(
-                              "Forgot password feature not implemented yet!",
+                              "Please contact admin to reset your password!",
                               Colors.red,
                             );
                           },
